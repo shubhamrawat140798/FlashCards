@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
-import { getBestScoreForQuiz } from '../lib/storage';
 import type { Quiz } from '../types/quiz';
 
 type QuizCardProps = {
   quiz: Quiz;
+  bestScore: number | null;
 };
 
-export function QuizCard({ quiz }: QuizCardProps) {
-  const best = getBestScoreForQuiz(quiz.id);
-
+export function QuizCard({ quiz, bestScore }: QuizCardProps) {
   return (
     <article className="quiz-card">
       <span className="quiz-card-category">{quiz.category}</span>
@@ -17,9 +15,9 @@ export function QuizCard({ quiz }: QuizCardProps) {
       <div className="quiz-card-meta">
         <span>{quiz.questions.length} questions</span>
         <span>{quiz.timeLimitMinutes} min limit</span>
-        {best !== null && (
+        {bestScore !== null && (
           <span>
-            Best: {best}/{quiz.questions.length}
+            Best: {bestScore}/{quiz.questions.length}
           </span>
         )}
       </div>

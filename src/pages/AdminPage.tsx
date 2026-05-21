@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { LoadingState } from '../components/LoadingState';
 import { QuestionEditor } from '../components/QuestionEditor';
+import { useAttempts } from '../hooks/useAttempts';
 import { useAuth } from '../hooks/useAuth';
 import { useQuizzes } from '../hooks/useQuizzes';
+import { exportAll, importAll } from '../lib/dataStore';
 import { validateQuiz } from '../lib/validation';
+import type { ExportPayload } from '../types/export';
 import type { Question, Quiz } from '../types/quiz';
 
 function emptyQuestion(): Question {
@@ -29,11 +33,14 @@ function emptyQuiz(): Quiz {
 export function AdminPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { quizzes, save, remove } = useQuizzes();
+  const { quizzes, loading, save, remove, refresh, invalidateCache } = useQuizzes();
+  const { refresh: refreshAttempts } = useAttempts();
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Quiz | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [success, setSuccess] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (selectedId && quizzes.find((q) => q.id === selectedId)) {
@@ -84,7 +91,7 @@ export function AdminPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!draft) return;
     const validationErrors = validateQuiz(draft);
     if (validationErrors.length > 0) {
@@ -92,27 +99,91 @@ export function AdminPage() {
       setSuccess('');
       return;
     }
-    save(draft);
-    setSelectedId(draft.id);
-    setErrors([]);
-    setSuccess('Quiz saved. Questions are now available on the home page.');
+    setBusy(true);
+    try {
+      await save(draft);
+      setSelectedId(draft.id);
+      setErrors([]);
+      setSuccess('Quiz saved. Questions are now available on the home page.');
+    } catch (e) {
+      setErrors([e instanceof Error ? e.message : 'Failed to save quiz']);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!draft || !selectedId) return;
     const existing = quizzes.find((q) => q.id === selectedId);
     if (!existing) return;
     if (!window.confirm(`Delete "${draft.title}"? This cannot be undone.`)) {
       return;
     }
-    remove(selectedId);
-    setSelectedId(null);
-    setDraft(null);
+    setBusy(true);
+    try {
+      await remove(selectedId);
+      setSelectedId(null);
+      setDraft(null);
+      setErrors([]);
+      setSuccess('Quiz deleted.');
+    } catch (e) {
+      setErrors([e instanceof Error ? e.message : 'Failed to delete quiz']);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setBusy(true);
     setErrors([]);
-    setSuccess('Quiz deleted.');
+    try {
+      await exportAll();
+      setSuccess('Data exported successfully.');
+    } catch (e) {
+      setErrors([e instanceof Error ? e.message : 'Export failed']);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImportFile = async (file: File) => {
+    if (
+      !window.confirm(
+        'Import will replace all quizzes and attempts with the file contents. Continue?'
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setErrors([]);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text) as ExportPayload;
+      if (!Array.isArray(payload.quizzes) || !Array.isArray(payload.attempts)) {
+        throw new Error('Invalid file format');
+      }
+      await importAll(payload);
+      invalidateCache();
+      await refresh();
+      await refreshAttempts();
+      setSelectedId(null);
+      setDraft(null);
+      setSuccess(
+        `Imported ${payload.quizzes.length} quizzes and ${payload.attempts.length} attempts.`
+      );
+    } catch (e) {
+      setErrors([e instanceof Error ? e.message : 'Import failed']);
+    } finally {
+      setBusy(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
   };
 
   const isNew = draft && !quizzes.some((q) => q.id === draft.id);
+
+  if (loading) {
+    return <LoadingState message="Loading admin portal..." />;
+  }
 
   return (
     <div className="admin-portal">
@@ -124,14 +195,41 @@ export function AdminPage() {
           </p>
         </div>
         <div className="admin-portal-actions">
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={busy}
+            onClick={() => void handleExport()}
+          >
+            Export JSON
+          </button>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            disabled={busy}
+            onClick={() => importInputRef.current?.click()}
+          >
+            Import JSON
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleImportFile(file);
+            }}
+          />
           <Link to="/" className="btn-secondary" style={{ textDecoration: 'none' }}>
             View quizzes
           </Link>
           <button
             type="button"
             className="btn-ghost"
-            onClick={() => {
-              logout();
+            disabled={busy}
+            onClick={async () => {
+              await logout();
               navigate('/admin/login', { replace: true });
             }}
           >
@@ -269,11 +367,21 @@ export function AdminPage() {
               </section>
 
               <div className="form-actions">
-                <button type="button" className="btn-primary" onClick={handleSave}>
-                  Save quiz
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={busy}
+                  onClick={() => void handleSave()}
+                >
+                  {busy ? 'Saving...' : 'Save quiz'}
                 </button>
                 {!isNew && (
-                  <button type="button" className="btn-danger" onClick={handleDelete}>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    disabled={busy}
+                    onClick={() => void handleDelete()}
+                  >
                     Delete quiz
                   </button>
                 )}

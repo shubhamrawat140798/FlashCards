@@ -1,30 +1,35 @@
 import { Link, useParams } from 'react-router-dom';
+import { LoadingState } from '../components/LoadingState';
 import { ResultsSummary } from '../components/ResultsSummary';
 import { ReviewList } from '../components/ReviewList';
 import { useAttempts } from '../hooks/useAttempts';
 import { useQuizzes } from '../hooks/useQuizzes';
 import { gradeQuiz } from '../lib/scoring';
-import { getAttemptById, getQuizById } from '../lib/storage';
 
 export function ResultsPage() {
   const { attemptId } = useParams<{ attemptId: string }>();
-  const { attempts } = useAttempts();
-  const { quizzes } = useQuizzes();
+  const { attempts, loading: attemptsLoading } = useAttempts();
+  const { quizzes, loading: quizzesLoading } = useQuizzes();
 
-  const attempt =
-    attempts.find((a) => a.id === attemptId) ??
-    (attemptId ? getAttemptById(attemptId) : undefined);
+  const loading = attemptsLoading || quizzesLoading;
 
-  const quiz =
-    quizzes.find((q) => q.id === attempt?.quizId) ??
-    (attempt ? getQuizById(attempt.quizId) : undefined);
+  const attempt = attempts.find((a) => a.id === attemptId);
+  const quiz = quizzes.find((q) => q.id === attempt?.quizId);
+
+  if (loading) {
+    return <LoadingState message="Loading results..." />;
+  }
 
   if (!attempt || !quiz) {
     return (
       <div className="empty-state">
         <h3>Results not found</h3>
-        <p>This attempt may have been cleared from storage.</p>
-        <Link to="/" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+        <p>This attempt may have been cleared or is still syncing.</p>
+        <Link
+          to="/"
+          className="btn-primary"
+          style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}
+        >
           Back to home
         </Link>
       </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getAttempts, saveAttempt } from '../lib/storage';
+import { loadAttempts, persistAttempt } from '../lib/dataStore';
 import type { QuizAttempt } from '../types/quiz';
 
 const ATTEMPTS_EVENT = 'mcq-attempts-changed';
@@ -9,18 +9,38 @@ function notify() {
 }
 
 export function useAttempts() {
-  const [attempts, setAttempts] = useState<QuizAttempt[]>(() => getAttempts());
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await loadAttempts();
+      setAttempts(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load attempts');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const refresh = () => setAttempts(getAttempts());
-    window.addEventListener(ATTEMPTS_EVENT, refresh);
-    return () => window.removeEventListener(ATTEMPTS_EVENT, refresh);
-  }, []);
+    refresh();
+    const handler = () => refresh();
+    window.addEventListener(ATTEMPTS_EVENT, handler);
+    return () => window.removeEventListener(ATTEMPTS_EVENT, handler);
+  }, [refresh]);
 
-  const addAttempt = useCallback((attempt: QuizAttempt) => {
-    saveAttempt(attempt);
-    notify();
-  }, []);
+  const addAttempt = useCallback(
+    async (attempt: QuizAttempt) => {
+      await persistAttempt(attempt);
+      notify();
+      await refresh();
+    },
+    [refresh]
+  );
 
-  return { attempts, addAttempt };
+  return { attempts, loading, error, refresh, addAttempt };
 }

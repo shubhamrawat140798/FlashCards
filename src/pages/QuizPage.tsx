@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { LoadingState } from '../components/LoadingState';
 import { QuestionBlock } from '../components/QuestionBlock';
 import { Timer } from '../components/Timer';
 import { useAttempts } from '../hooks/useAttempts';
 import { useQuizzes } from '../hooks/useQuizzes';
 import { gradeQuiz } from '../lib/scoring';
-import { getQuizById } from '../lib/storage';
 import type { Quiz } from '../types/quiz';
 
 export function QuizPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
   const { addAttempt } = useAttempts();
-  const { quizzes } = useQuizzes();
+  const { quizzes, loading } = useQuizzes();
 
-  const quiz: Quiz | undefined =
-    quizzes.find((q) => q.id === quizId) ?? (quizId ? getQuizById(quizId) : undefined);
+  const quiz: Quiz | undefined = quizzes.find((q) => q.id === quizId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -28,7 +27,7 @@ export function QuizPage() {
   const answersRef = useRef(answers);
   answersRef.current = answers;
 
-  const submitQuiz = useCallback(() => {
+  const submitQuiz = useCallback(async () => {
     if (!quiz || submittedRef.current) return;
     submittedRef.current = true;
     setSubmitting(true);
@@ -46,12 +45,17 @@ export function QuizPage() {
       timeSpentSeconds: Math.round((now - startedAtRef.current) / 1000),
     };
 
-    addAttempt(attempt);
-    navigate(`/results/${attempt.id}`);
+    try {
+      await addAttempt(attempt);
+      navigate(`/results/${attempt.id}`);
+    } catch {
+      submittedRef.current = false;
+      setSubmitting(false);
+    }
   }, [quiz, addAttempt, navigate]);
 
   const handleExpire = useCallback(() => {
-    submitQuiz();
+    void submitQuiz();
   }, [submitQuiz]);
 
   useEffect(() => {
@@ -62,12 +66,20 @@ export function QuizPage() {
     startedAtRef.current = Date.now();
   }, [quizId]);
 
+  if (loading) {
+    return <LoadingState message="Loading quiz..." />;
+  }
+
   if (!quiz) {
     return (
       <div className="empty-state">
         <h3>Quiz not found</h3>
         <p>This quiz may have been deleted.</p>
-        <Link to="/" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+        <Link
+          to="/"
+          className="btn-primary"
+          style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}
+        >
           Back to home
         </Link>
       </div>
@@ -129,9 +141,9 @@ export function QuizPage() {
               type="button"
               className="btn-primary"
               disabled={!allAnswered || submitting}
-              onClick={submitQuiz}
+              onClick={() => void submitQuiz()}
             >
-              Submit quiz
+              {submitting ? 'Submitting...' : 'Submit quiz'}
             </button>
           )}
         </div>

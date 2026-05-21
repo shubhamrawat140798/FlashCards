@@ -69,6 +69,10 @@ export function saveAttempt(attempt: QuizAttempt): void {
   writeJson(ATTEMPTS_KEY, attempts);
 }
 
+export function saveAttempts(attempts: QuizAttempt[]): void {
+  writeJson(ATTEMPTS_KEY, attempts);
+}
+
 export function getAttemptsForQuiz(quizId: string): QuizAttempt[] {
   return getAttempts().filter((a) => a.quizId === quizId);
 }

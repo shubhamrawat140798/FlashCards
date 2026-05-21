@@ -1,20 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isAuthenticated, login as authLogin, logout as authLogout } from '../lib/auth';
+import { checkAuthenticated, login as authLogin, logout as authLogout } from '../lib/auth';
 
 export function useAuth() {
-  const [authed, setAuthed] = useState(isAuthenticated);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setIsAuthenticated(await checkAuthenticated());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const refresh = () => setAuthed(isAuthenticated());
-    window.addEventListener('mcq-auth-change', refresh);
-    return () => window.removeEventListener('mcq-auth-change', refresh);
+    refresh();
+    const onChange = () => {
+      refresh();
+    };
+    window.addEventListener('mcq-auth-change', onChange);
+    return () => window.removeEventListener('mcq-auth-change', onChange);
+  }, [refresh]);
+
+  const login = useCallback(async (password: string) => {
+    const ok = await authLogin(password);
+    if (ok) setIsAuthenticated(true);
+    return ok;
   }, []);
 
-  const login = useCallback((password: string) => authLogin(password), []);
-
-  const logout = useCallback(() => {
-    authLogout();
+  const logout = useCallback(async () => {
+    await authLogout();
+    setIsAuthenticated(false);
   }, []);
 
-  return { isAuthenticated: authed, login, logout };
+  return { isAuthenticated, loading, login, logout, refresh };
 }

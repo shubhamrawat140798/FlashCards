@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  deleteQuiz,
-  getQuizzes,
-  saveQuizzes,
-  upsertQuiz,
-} from '../lib/storage';
+import { resetDataModeCache } from '../lib/dataMode';
+import { loadQuizzes, persistQuiz, removeQuiz } from '../lib/dataStore';
 import type { Quiz } from '../types/quiz';
 
 const QUIZZES_EVENT = 'mcq-quizzes-changed';
@@ -14,32 +10,52 @@ function notify() {
 }
 
 export function useQuizzes() {
-  const [quizzes, setQuizzes] = useState<Quiz[]>(() => getQuizzes());
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await loadQuizzes();
+      setQuizzes(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load quizzes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const refresh = () => setQuizzes(getQuizzes());
-    window.addEventListener(QUIZZES_EVENT, refresh);
-    return () => window.removeEventListener(QUIZZES_EVENT, refresh);
-  }, []);
+    refresh();
+    const handler = () => refresh();
+    window.addEventListener(QUIZZES_EVENT, handler);
+    return () => window.removeEventListener(QUIZZES_EVENT, handler);
+  }, [refresh]);
 
-  const refresh = useCallback(() => {
-    setQuizzes(getQuizzes());
-  }, []);
+  const save = useCallback(
+    async (quiz: Quiz) => {
+      await persistQuiz(quiz);
+      notify();
+      await refresh();
+    },
+    [refresh]
+  );
 
-  const save = useCallback((quiz: Quiz) => {
-    upsertQuiz(quiz);
+  const remove = useCallback(
+    async (id: string) => {
+      await removeQuiz(id);
+      notify();
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const invalidateCache = useCallback(() => {
+    resetDataModeCache();
     notify();
   }, []);
 
-  const remove = useCallback((id: string) => {
-    deleteQuiz(id);
-    notify();
-  }, []);
-
-  const replaceAll = useCallback((next: Quiz[]) => {
-    saveQuizzes(next);
-    notify();
-  }, []);
-
-  return { quizzes, refresh, save, remove, replaceAll };
+  return { quizzes, loading, error, refresh, save, remove, invalidateCache };
 }

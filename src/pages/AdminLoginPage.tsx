@@ -1,23 +1,29 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { LoadingState } from '../components/LoadingState';
 
 export function AdminLoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, loading, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const from =
     (location.state as { from?: { pathname: string } } | null)?.from?.pathname ??
     '/admin';
 
+  if (loading) {
+    return <LoadingState message="Loading..." />;
+  }
+
   if (isAuthenticated) {
     return <Navigate to={from} replace />;
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -26,11 +32,17 @@ export function AdminLoginPage() {
       return;
     }
 
-    if (login(password)) {
-      navigate(from, { replace: true });
-    } else {
-      setError('Incorrect password.');
-      setPassword('');
+    setSubmitting(true);
+    try {
+      const ok = await login(password);
+      if (ok) {
+        navigate(from, { replace: true });
+      } else {
+        setError('Incorrect password.');
+        setPassword('');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -58,17 +70,22 @@ export function AdminLoginPage() {
               placeholder="Admin password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={submitting}
             />
           </div>
 
-          <button type="submit" className="btn-primary login-submit">
-            Sign in
+          <button
+            type="submit"
+            className="btn-primary login-submit"
+            disabled={submitting}
+          >
+            {submitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
         <p className="login-hint">
-          Default password is <code>admin</code> unless you set{' '}
-          <code>VITE_ADMIN_PASSWORD</code> in a <code>.env</code> file.
+          On Vercel, set <code>ADMIN_PASSWORD</code> in project environment variables.
+          Local dev defaults to <code>admin</code> when the database is unavailable.
         </p>
       </div>
     </div>

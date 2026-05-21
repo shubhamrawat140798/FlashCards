@@ -832,3 +832,13 @@ label {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+
+.loading-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-muted);
+}
+
+.loading-state p {
+  margin: 0;
+}

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
+import { LoadingState } from '../components/LoadingState';
 import { useAttempts } from '../hooks/useAttempts';
 import { useQuizzes } from '../hooks/useQuizzes';
 import { formatDuration, formatPercent } from '../lib/scoring';
 
 export function HistoryPage() {
-  const { attempts } = useAttempts();
+  const { attempts, loading } = useAttempts();
   const { quizzes } = useQuizzes();
 
   const sorted = [...attempts].sort(
@@ -14,16 +15,24 @@ export function HistoryPage() {
   const getQuizTitle = (quizId: string) =>
     quizzes.find((q) => q.id === quizId)?.title ?? 'Unknown quiz';
 
+  if (loading) {
+    return <LoadingState message="Loading history..." />;
+  }
+
   return (
     <div>
       <h1 className="page-title">History</h1>
-      <p className="page-subtitle">Past quiz attempts saved in this browser.</p>
+      <p className="page-subtitle">Past quiz attempts.</p>
 
       {sorted.length === 0 ? (
         <div className="empty-state">
           <h3>No attempts yet</h3>
           <p>Complete a quiz to see your results here.</p>
-          <Link to="/" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+          <Link
+            to="/"
+            className="btn-primary"
+            style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}
+          >
             Browse quizzes
           </Link>
         </div>
@@ -43,12 +52,11 @@ export function HistoryPage() {
               <tr key={attempt.id}>
                 <td>{getQuizTitle(attempt.quizId)}</td>
                 <td>
-                  {attempt.score}/{attempt.total} ({formatPercent(attempt.score, attempt.total)})
+                  {attempt.score}/{attempt.total} (
+                  {formatPercent(attempt.score, attempt.total)})
                 </td>
                 <td>{formatDuration(attempt.timeSpentSeconds)}</td>
-                <td>
-                  {new Date(attempt.completedAt).toLocaleString()}
-                </td>
+                <td>{new Date(attempt.completedAt).toLocaleString()}</td>
                 <td>
                   <Link to={`/results/${attempt.id}`}>View</Link>
                 </td>
