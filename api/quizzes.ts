@@ -1,11 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isAuthorized } from './lib/auth';
-import {
-  deleteQuiz,
-  fetchAllQuizzes,
-  upsertQuiz,
-  type Quiz,
-} from './lib/db';
+import { deleteQuiz, fetchAllQuizzes, upsertQuiz, type Quiz } from './lib/db';
+import { isPostgresConfigured } from './lib/postgres';
 import {
   badRequest,
   json,
@@ -17,6 +13,12 @@ import {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    if (!isPostgresConfigured()) {
+      return json(res, 503, {
+        error: 'Database not configured. Link Postgres storage on Vercel and redeploy.',
+      });
+    }
+
     if (req.method === 'GET') {
       const quizzes = await fetchAllQuizzes();
       return json(res, 200, { quizzes });

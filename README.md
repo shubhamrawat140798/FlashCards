@@ -110,5 +110,5 @@ Also accepts a single question object or `{ "questions": [...] }`. Optional `id`
 
 - Vite + React + TypeScript
 - React Router
-- Vercel Serverless Functions + Vercel Postgres
+- Vercel Serverless Functions + Neon Postgres (`@neondatabase/serverless`)
 - localStorage fallback for offline/local dev

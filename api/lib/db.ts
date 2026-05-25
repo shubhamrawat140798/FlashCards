@@ -1,5 +1,5 @@
-import { sql } from '@vercel/postgres';
 import { seedQuizzes } from './seed';
+import { getSql, pingDatabase } from './postgres';
 
 export type Question = {
   id: string;
@@ -37,8 +37,13 @@ export type ExportPayload = {
 
 let tablesReady = false;
 
+export async function isDatabaseAvailable(): Promise<boolean> {
+  return pingDatabase();
+}
+
 export async function ensureTables(): Promise<void> {
   if (tablesReady) return;
+  const sql = getSql();
   await sql`
     CREATE TABLE IF NOT EXISTS quizzes (
       id TEXT PRIMARY KEY,
@@ -57,18 +62,10 @@ export async function ensureTables(): Promise<void> {
   tablesReady = true;
 }
 
-export async function isDatabaseAvailable(): Promise<boolean> {
-  try {
-    await sql`SELECT 1`;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function seedIfEmpty(): Promise<void> {
-  const { rows } = await sql`SELECT COUNT(*)::int AS count FROM quizzes`;
-  const count = rows[0]?.count ?? 0;
+  const sql = getSql();
+  const rows = await sql`SELECT COUNT(*)::int AS count FROM quizzes`;
+  const count = Number(rows[0]?.count ?? 0);
   if (count > 0) return;
 
   for (const quiz of seedQuizzes) {
@@ -83,13 +80,14 @@ async function seedIfEmpty(): Promise<void> {
 export async function fetchAllQuizzes(): Promise<Quiz[]> {
   await ensureTables();
   await seedIfEmpty();
-  const { rows } =
-    await sql`SELECT data FROM quizzes ORDER BY updated_at DESC`;
+  const sql = getSql();
+  const rows = await sql`SELECT data FROM quizzes ORDER BY updated_at DESC`;
   return rows.map((r) => r.data as Quiz);
 }
 
 export async function upsertQuiz(quiz: Quiz): Promise<void> {
   await ensureTables();
+  const sql = getSql();
   await sql`
     INSERT INTO quizzes (id, data, updated_at)
     VALUES (${quiz.id}, ${JSON.stringify(quiz)}::jsonb, NOW())
@@ -101,18 +99,20 @@ export async function upsertQuiz(quiz: Quiz): Promise<void> {
 
 export async function deleteQuiz(id: string): Promise<void> {
   await ensureTables();
+  const sql = getSql();
   await sql`DELETE FROM quizzes WHERE id = ${id}`;
 }
 
 export async function fetchAllAttempts(): Promise<QuizAttempt[]> {
   await ensureTables();
-  const { rows } =
-    await sql`SELECT data FROM attempts ORDER BY completed_at DESC`;
+  const sql = getSql();
+  const rows = await sql`SELECT data FROM attempts ORDER BY completed_at DESC`;
   return rows.map((r) => r.data as QuizAttempt);
 }
 
 export async function insertAttempt(attempt: QuizAttempt): Promise<void> {
   await ensureTables();
+  const sql = getSql();
   await sql`
     INSERT INTO attempts (id, quiz_id, data, completed_at)
     VALUES (
@@ -140,6 +140,7 @@ export async function exportAll(): Promise<ExportPayload> {
 
 export async function importAll(payload: ExportPayload): Promise<void> {
   await ensureTables();
+  const sql = getSql();
   await sql`DELETE FROM attempts`;
   await sql`DELETE FROM quizzes`;
 
