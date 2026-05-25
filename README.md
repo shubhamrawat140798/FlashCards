@@ -35,12 +35,31 @@ Or use `npm run dev` only — API calls fall back to localStorage when `/api/hea
 
 1. Push the repo to GitHub and import in [Vercel](https://vercel.com)
 2. **Storage → Create Database → Postgres** (links `POSTGRES_URL` automatically)
-3. **Settings → Environment Variables**:
+3. **Settings → Environment Variables** (enable for **Production**):
    - `ADMIN_PASSWORD` — admin login password (server-side)
    - `SESSION_SECRET` — random string for session cookies
-4. Deploy. Tables are created on first API request; sample quizzes seed if empty.
+4. **Redeploy** after adding storage or env vars.
+
+Tables are created on first API request; sample quizzes seed if empty.
 
 Optional: run `scripts/schema.sql` in the Postgres SQL editor for explicit schema setup.
+
+### Verify production uses the database
+
+1. Open `https://YOUR-APP.vercel.app/api/health` — expect `{"ok":true,"database":true}`.
+2. Open **Admin Portal** — banner should say **Database (Vercel Postgres)**. If it says **Browser only (localStorage)**, Postgres is not connected; saves will not appear in SQL.
+3. After **Save quiz**, check Network tab: `PUT /api/quizzes` should return **200**.
+4. In Neon/Vercel SQL: `SELECT id, data->>'title' AS title FROM quizzes;`
+
+### Troubleshooting: changes not in database
+
+| Symptom | Fix |
+|---------|-----|
+| `/api/health` shows `"database":false` | Link Postgres storage to the project; redeploy |
+| Admin banner says localStorage | Same as above; or run `vercel dev` locally with env pulled |
+| `PUT /api/quizzes` returns 401 | Log in at `/admin/login` with `ADMIN_PASSWORD` |
+| UI shows data but SQL empty | Data is in your browser only — connect DB and save again |
+| Env vars added but no change | Redeploy production after changing variables |
 
 ## Admin portal
 

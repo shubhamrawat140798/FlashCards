@@ -3,9 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LoadingState } from '../components/LoadingState';
 import { JsonQuestionsImport } from '../components/JsonQuestionsImport';
 import { QuestionEditor } from '../components/QuestionEditor';
+import { DataSourceBanner } from '../components/DataSourceBanner';
 import { useAttempts } from '../hooks/useAttempts';
 import { useAuth } from '../hooks/useAuth';
+import { useDataMode } from '../hooks/useDataMode';
 import { useQuizzes } from '../hooks/useQuizzes';
+import { getDataMode } from '../lib/dataMode';
 import { exportAll, importAll } from '../lib/dataStore';
 import { validateQuiz } from '../lib/validation';
 import type { ExportPayload } from '../types/export';
@@ -34,6 +37,8 @@ function emptyQuiz(): Quiz {
 export function AdminPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { status: dataStatus, loading: dataModeLoading, refresh: refreshDataMode } =
+    useDataMode();
   const { quizzes, loading, save, remove, refresh, invalidateCache } = useQuizzes();
   const { refresh: refreshAttempts } = useAttempts();
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -119,7 +124,12 @@ export function AdminPage() {
       await save(draft);
       setSelectedId(draft.id);
       setErrors([]);
-      setSuccess('Quiz saved. Questions are now available on the home page.');
+      const mode = await getDataMode(true);
+      setSuccess(
+        mode === 'api'
+          ? 'Quiz saved to the database. Visible to all users on the home page.'
+          : 'Quiz saved in this browser only (localStorage). Connect Postgres on Vercel to share with everyone.'
+      );
     } catch (e) {
       setErrors([e instanceof Error ? e.message : 'Failed to save quiz']);
     } finally {
@@ -202,6 +212,17 @@ export function AdminPage() {
 
   return (
     <div className="admin-portal">
+      <DataSourceBanner
+        status={dataStatus}
+        loading={dataModeLoading}
+        variant="full"
+        onRecheck={() => {
+          void refreshDataMode(true);
+          invalidateCache();
+          void refresh();
+        }}
+      />
+
       <div className="admin-portal-header">
         <div>
           <h1 className="page-title">Admin Portal</h1>

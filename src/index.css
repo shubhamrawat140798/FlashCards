@@ -843,6 +843,64 @@ label {
   margin: 0;
 }
 
+.layout-data-source {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.5rem 1.5rem 0;
+}
+
+.data-source-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.data-source-banner.data-source-db {
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+
+.data-source-banner.data-source-local {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: var(--warning);
+}
+
+.data-source-banner.data-source-loading {
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.data-source-label {
+  color: var(--text);
+}
+
+.data-source-detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.data-source-detail code {
+  font-size: 0.75rem;
+  background: var(--bg);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.data-source-main {
+  flex: 1;
+  min-width: 200px;
+}
+
 .json-import {
   margin-bottom: 1rem;
 }

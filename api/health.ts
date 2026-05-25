@@ -9,7 +9,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const database = await isDatabaseAvailable();
-    return json(res, 200, { ok: true, database });
+    return json(res, 200, {
+      ok: true,
+      database,
+      postgresConfigured: Boolean(process.env.POSTGRES_URL),
+    });
   } catch (err) {
     return serverError(res, err);
   }
