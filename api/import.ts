@@ -9,6 +9,9 @@ import {
   serverError,
   unauthorized,
 } from './lib/http';
+import { nodeRuntime } from './lib/runtime';
+
+export const config = nodeRuntime;
 
 function isValidPayload(body: unknown): body is ExportPayload {
   if (!body || typeof body !== 'object') return false;

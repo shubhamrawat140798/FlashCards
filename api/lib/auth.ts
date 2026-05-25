@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import * as crypto from 'crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const COOKIE_NAME = 'mcq_admin';

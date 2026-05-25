@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isAuthorized } from './lib/auth';
+import { nodeRuntime } from './lib/runtime';
+
+export const config = nodeRuntime;
 import { deleteQuiz, fetchAllQuizzes, upsertQuiz, type Quiz } from './lib/db';
 import { isPostgresConfigured } from './lib/postgres';
 import {

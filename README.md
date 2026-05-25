@@ -57,7 +57,8 @@ Optional: run `scripts/schema.sql` in the Postgres SQL editor for explicit schem
 
 | Symptom | Fix |
 |---------|-----|
-| `/api/health` shows `"database":false` | Link Postgres storage to the project; redeploy |
+| `/api/health` shows `"database":false` | Link Neon storage; ensure `DATABASE_URL` on Production; redeploy |
+| 500 FUNCTION_INVOCATION_FAILED | Redeploy latest code; check Vercel Function logs; ensure `ws` package is installed |
 | Admin banner says localStorage | Same as above; or run `vercel dev` locally with env pulled |
 | `PUT /api/quizzes` returns 401 | Log in at `/admin/login` with `ADMIN_PASSWORD` |
 | UI shows data but SQL empty | Data is in your browser only — connect DB and save again |

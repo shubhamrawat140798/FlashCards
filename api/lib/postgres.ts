@@ -1,4 +1,4 @@
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import type { NeonQueryFunction } from '@neondatabase/serverless';
 
 /** Neon via Vercel integration — matches Storage → Neon → .env.local tab */
 const ENV_KEYS = [
@@ -11,6 +11,21 @@ const ENV_KEYS = [
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let activeEnvKey: (typeof ENV_KEYS)[number] | null = null;
+let neonModule: typeof import('@neondatabase/serverless') | null = null;
+
+async function loadNeon() {
+  if (!neonModule) {
+    neonModule = await import('@neondatabase/serverless');
+    // Required for Neon in Node.js serverless (Vercel)
+    try {
+      const ws = await import('ws');
+      neonModule.neonConfig.webSocketConstructor = ws.default;
+    } catch {
+      console.warn('ws package not available; Neon may fail on this runtime');
+    }
+  }
+  return neonModule;
+}
 
 export function getConnectionSource(): (typeof ENV_KEYS)[number] | null {
   for (const key of ENV_KEYS) {
@@ -30,7 +45,7 @@ export function isPostgresConfigured(): boolean {
   return Boolean(getConnectionString());
 }
 
-export function getSql(): NeonQueryFunction<false, false> {
+export async function getSql(): Promise<NeonQueryFunction<false, false>> {
   const url = getConnectionString();
   const source = getConnectionSource();
   if (!url || !source) {
@@ -39,6 +54,7 @@ export function getSql(): NeonQueryFunction<false, false> {
     );
   }
   if (!sqlClient || activeEnvKey !== source) {
+    const { neon } = await loadNeon();
     sqlClient = neon(url);
     activeEnvKey = source;
   }
@@ -53,7 +69,7 @@ export function resetSqlClient(): void {
 export async function pingDatabase(): Promise<boolean> {
   if (!isPostgresConfigured()) return false;
   try {
-    const sql = getSql();
+    const sql = await getSql();
     await sql`SELECT 1`;
     return true;
   } catch (err) {

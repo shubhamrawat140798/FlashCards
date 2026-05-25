@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { clearAuthCookie } from '../lib/auth';
 import { json, methodNotAllowed, serverError } from '../lib/http';
+import { nodeRuntime } from '../lib/runtime';
+
+export const config = nodeRuntime;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return methodNotAllowed(res);
