@@ -8,7 +8,6 @@ import { useAttempts } from '../hooks/useAttempts';
 import { useAuth } from '../hooks/useAuth';
 import { useDataMode } from '../hooks/useDataMode';
 import { useQuizzes } from '../hooks/useQuizzes';
-import { getDataMode } from '../lib/dataMode';
 import { exportAll, importAll } from '../lib/dataStore';
 import { validateQuiz } from '../lib/validation';
 import type { ExportPayload } from '../types/export';
@@ -124,12 +123,7 @@ export function AdminPage() {
       await save(draft);
       setSelectedId(draft.id);
       setErrors([]);
-      const mode = await getDataMode(true);
-      setSuccess(
-        mode === 'api'
-          ? 'Quiz saved to the database. Visible to all users on the home page.'
-          : 'Quiz saved in this browser only (localStorage). Connect Postgres on Vercel to share with everyone.'
-      );
+      setSuccess('Quiz saved to the database. Visible to all users on the home page.');
     } catch (e) {
       setErrors([e instanceof Error ? e.message : 'Failed to save quiz']);
     } finally {
@@ -205,6 +199,8 @@ export function AdminPage() {
   };
 
   const isNew = draft && !quizzes.some((q) => q.id === draft.id);
+  const dbReady = Boolean(dataStatus?.database);
+  const adminDisabled = busy || !dbReady;
 
   if (loading) {
     return <LoadingState message="Loading admin portal..." />;
@@ -234,7 +230,7 @@ export function AdminPage() {
           <button
             type="button"
             className="btn-secondary btn-sm"
-            disabled={busy}
+            disabled={adminDisabled}
             onClick={() => void handleExport()}
           >
             Export JSON
@@ -242,7 +238,7 @@ export function AdminPage() {
           <button
             type="button"
             className="btn-secondary btn-sm"
-            disabled={busy}
+            disabled={adminDisabled}
             onClick={() => importInputRef.current?.click()}
           >
             Import JSON
@@ -277,7 +273,13 @@ export function AdminPage() {
       <div className="admin-layout">
         <aside className="admin-list">
           <div className="admin-list-toolbar">
-            <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={startNew}>
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ width: '100%' }}
+              disabled={adminDisabled}
+              onClick={startNew}
+            >
               + New quiz
             </button>
           </div>
@@ -308,7 +310,12 @@ export function AdminPage() {
             <div className="empty-state">
               <h3>Admin Portal</h3>
               <p>Select a quiz to edit its questions and answers, or create a new quiz.</p>
-              <button type="button" className="btn-primary" onClick={startNew}>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={adminDisabled}
+                onClick={startNew}
+              >
                 Create new quiz
               </button>
             </div>
@@ -385,13 +392,18 @@ export function AdminPage() {
               <section className="admin-section">
                 <div className="admin-section-header">
                   <h3>Questions &amp; answers</h3>
-                  <button type="button" className="btn-secondary btn-sm" onClick={addQuestion}>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    disabled={adminDisabled}
+                    onClick={addQuestion}
+                  >
                     + Add question
                   </button>
                 </div>
 
                 <JsonQuestionsImport
-                  disabled={busy}
+                  disabled={adminDisabled}
                   onAdd={appendQuestionsFromJson}
                   onReplace={replaceQuestionsFromJson}
                 />
@@ -412,16 +424,16 @@ export function AdminPage() {
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={busy}
+                  disabled={adminDisabled}
                   onClick={() => void handleSave()}
                 >
-                  {busy ? 'Saving...' : 'Save quiz'}
+                  {busy ? 'Saving...' : 'Save to database'}
                 </button>
                 {!isNew && (
                   <button
                     type="button"
                     className="btn-danger"
-                    disabled={busy}
+                    disabled={adminDisabled}
                     onClick={() => void handleDelete()}
                   >
                     Delete quiz

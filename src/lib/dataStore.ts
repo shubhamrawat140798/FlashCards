@@ -1,10 +1,27 @@
 import type { ExportPayload } from '../types/export';
 import type { Quiz, QuizAttempt } from '../types/quiz';
 import * as api from './apiClient';
-import { getDataMode } from './dataMode';
+import { getDataMode, requireDatabase, useDatabaseOnly } from './dataMode';
 import * as local from './storage';
 
+async function ensureApiReady(): Promise<void> {
+  if (useDatabaseOnly()) {
+    await requireDatabase();
+    return;
+  }
+  const mode = await getDataMode();
+  if (mode !== 'api') {
+    throw new Error(
+      'Database mode is required. Set VITE_USE_API=true or run with vercel dev.'
+    );
+  }
+}
+
 export async function loadQuizzes(): Promise<Quiz[]> {
+  if (useDatabaseOnly()) {
+    await requireDatabase();
+    return api.fetchQuizzes();
+  }
   const mode = await getDataMode();
   if (mode === 'api') return api.fetchQuizzes();
   return local.getQuizzes();
@@ -16,30 +33,31 @@ export async function loadQuizById(id: string): Promise<Quiz | undefined> {
 }
 
 export async function persistQuiz(quiz: Quiz): Promise<void> {
-  const mode = await getDataMode();
-  if (mode === 'api') {
-    await api.saveQuiz(quiz);
-    return;
-  }
-  local.upsertQuiz(quiz);
+  await ensureApiReady();
+  await api.saveQuiz(quiz);
 }
 
 export async function removeQuiz(id: string): Promise<void> {
-  const mode = await getDataMode();
-  if (mode === 'api') {
-    await api.deleteQuizApi(id);
-    return;
-  }
-  local.deleteQuiz(id);
+  await ensureApiReady();
+  await api.deleteQuizApi(id);
 }
 
 export async function loadAttempts(): Promise<QuizAttempt[]> {
+  if (useDatabaseOnly()) {
+    await requireDatabase();
+    return api.fetchAttempts();
+  }
   const mode = await getDataMode();
   if (mode === 'api') return api.fetchAttempts();
   return local.getAttempts();
 }
 
 export async function persistAttempt(attempt: QuizAttempt): Promise<void> {
+  if (useDatabaseOnly()) {
+    await requireDatabase();
+    await api.saveAttemptApi(attempt);
+    return;
+  }
   const mode = await getDataMode();
   if (mode === 'api') {
     await api.saveAttemptApi(attempt);
@@ -58,34 +76,11 @@ export function getBestScoreForQuiz(
 }
 
 export async function exportAll(): Promise<void> {
-  const mode = await getDataMode();
-  if (mode === 'api') {
-    await api.downloadExport();
-    return;
-  }
-  const payload: ExportPayload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    quizzes: local.getQuizzes(),
-    attempts: local.getAttempts(),
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: 'application/json',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `mcq-export-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await ensureApiReady();
+  await api.downloadExport();
 }
 
 export async function importAll(payload: ExportPayload): Promise<void> {
-  const mode = await getDataMode();
-  if (mode === 'api') {
-    await api.importData(payload);
-    return;
-  }
-  local.saveQuizzes(payload.quizzes);
-  local.saveAttempts(payload.attempts);
+  await ensureApiReady();
+  await api.importData(payload);
 }

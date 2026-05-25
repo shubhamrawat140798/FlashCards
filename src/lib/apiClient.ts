@@ -31,7 +31,14 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-export async function checkHealth(): Promise<{ ok: boolean; database: boolean }> {
+export async function checkHealth(): Promise<{
+  ok: boolean;
+  database: boolean;
+  postgresConfigured?: boolean;
+  connectionSource?: string | null;
+  provider?: string;
+  error?: string;
+}> {
   return request('/api/health');
 }
 

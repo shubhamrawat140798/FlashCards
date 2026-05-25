@@ -1,4 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import {
+  getConnectionSource,
+  isPostgresConfigured,
+  pingDatabase,
+} from './lib/postgres';
 import { nodeRuntime } from './lib/runtime';
 
 export const config = nodeRuntime;
@@ -11,9 +16,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { getConnectionSource, isPostgresConfigured, pingDatabase } =
-      await import('./lib/postgres');
-
     const connectionSource = getConnectionSource();
     const postgresConfigured = isPostgresConfigured();
     const database = postgresConfigured ? await pingDatabase() : false;
@@ -34,6 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       postgresConfigured: Boolean(
         process.env.DATABASE_URL || process.env.POSTGRES_URL
       ),
+      connectionSource: getConnectionSource(),
       error: message,
       provider: 'neon',
     });

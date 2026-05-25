@@ -1,4 +1,5 @@
 import type { HealthStatus } from '../lib/dataMode';
+import { useDatabaseOnly } from '../lib/dataMode';
 
 type DataSourceBannerProps = {
   status: HealthStatus | null;
@@ -16,12 +17,13 @@ export function DataSourceBanner({
   if (loading || !status) {
     return (
       <div className="data-source-banner data-source-loading" role="status">
-        Checking data connection…
+        Checking database connection…
       </div>
     );
   }
 
-  const isDatabase = status.mode === 'api' && status.database;
+  const isDatabase = status.database;
+  const databaseOnly = useDatabaseOnly();
 
   return (
     <div
@@ -31,22 +33,35 @@ export function DataSourceBanner({
       <div className="data-source-main">
         <span className="data-source-label">
           Data source:{' '}
-          <strong>{isDatabase ? 'Database (Vercel Postgres)' : 'Browser only (localStorage)'}</strong>
+          <strong>
+            {isDatabase
+              ? 'Database (Neon Postgres)'
+              : databaseOnly
+                ? 'Database unavailable'
+                : 'Browser only (localStorage)'}
+          </strong>
         </span>
         {variant === 'full' && status.error && (
           <p className="data-source-detail">{status.error}</p>
         )}
-        {variant === 'full' && !isDatabase && (
+        {variant === 'full' && !isDatabase && databaseOnly && (
           <p className="data-source-detail">
-            Changes are saved only in this browser until Postgres is connected. Other
-            users and the SQL console will not see your edits. Link Neon in Vercel
-            → Storage → Neon, ensure <code>DATABASE_URL</code> is set, then redeploy.
+            Admin save/delete requires the database. This app does not use
+            localStorage in production. Fix the connection, click Recheck, then
+            try again.
+          </p>
+        )}
+        {variant === 'full' && !isDatabase && !databaseOnly && (
+          <p className="data-source-detail">
+            Running in local dev mode without API. Set{' '}
+            <code>VITE_USE_API=true</code> and run <code>npm run dev:full</code>{' '}
+            to use the database locally.
           </p>
         )}
         {variant === 'full' && isDatabase && (
           <p className="data-source-detail">
-            Quizzes and attempts are stored in the shared database. All visitors see
-            the same content after you save.
+            All quizzes and attempts are stored in Neon. Add, edit, and delete
+            in Admin Portal write directly to the database.
           </p>
         )}
       </div>

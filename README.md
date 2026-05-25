@@ -2,7 +2,7 @@
 
 A multiple-choice quiz app built with Vite, React, and TypeScript. Browse quizzes by category, take timed tests, review scores, and manage content from an admin portal.
 
-Data can run in **localStorage** (local dev) or **Vercel Postgres** (production) with JSON export/import.
+Data is stored in **Neon Postgres** in production (no localStorage). Local dev can use `VITE_USE_API=false` for offline testing only.
 
 ## Features
 

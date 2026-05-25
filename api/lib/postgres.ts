@@ -18,8 +18,9 @@ async function loadNeon() {
     neonModule = await import('@neondatabase/serverless');
     // Required for Neon in Node.js serverless (Vercel)
     try {
-      const ws = await import('ws');
-      neonModule.neonConfig.webSocketConstructor = ws.default;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const ws = require('ws');
+      neonModule.neonConfig.webSocketConstructor = ws.default ?? ws;
     } catch {
       console.warn('ws package not available; Neon may fail on this runtime');
     }
