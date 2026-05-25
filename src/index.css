@@ -842,3 +842,61 @@ label {
 .loading-state p {
   margin: 0;
 }
+
+.json-import {
+  margin-bottom: 1rem;
+}
+
+.json-import-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.json-import-toggle:hover {
+  border-color: var(--accent);
+}
+
+.json-import-panel {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.json-import-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.json-import-hint code {
+  font-size: 0.75rem;
+  background: var(--surface);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.json-import-textarea {
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 160px;
+}
+
+.json-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

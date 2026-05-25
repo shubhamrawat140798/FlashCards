@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LoadingState } from '../components/LoadingState';
+import { JsonQuestionsImport } from '../components/JsonQuestionsImport';
 import { QuestionEditor } from '../components/QuestionEditor';
 import { useAttempts } from '../hooks/useAttempts';
 import { useAuth } from '../hooks/useAuth';
@@ -80,6 +81,20 @@ export function AdminPage() {
     setDraft((d) =>
       d ? { ...d, questions: [...d.questions, emptyQuestion()] } : d
     );
+  };
+
+  const appendQuestionsFromJson = (questions: Question[]) => {
+    setDraft((d) =>
+      d ? { ...d, questions: [...d.questions, ...questions] } : d
+    );
+    setErrors([]);
+    setSuccess(`Added ${questions.length} question(s) from JSON.`);
+  };
+
+  const replaceQuestionsFromJson = (questions: Question[]) => {
+    setDraft((d) => (d ? { ...d, questions } : d));
+    setErrors([]);
+    setSuccess(`Replaced with ${questions.length} question(s) from JSON.`);
   };
 
   const removeQuestion = (index: number) => {
@@ -353,6 +368,12 @@ export function AdminPage() {
                     + Add question
                   </button>
                 </div>
+
+                <JsonQuestionsImport
+                  disabled={busy}
+                  onAdd={appendQuestionsFromJson}
+                  onReplace={replaceQuestionsFromJson}
+                />
 
                 {draft.questions.map((question, qIndex) => (
                   <QuestionEditor

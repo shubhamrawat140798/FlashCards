@@ -10,7 +10,7 @@ Data can run in **localStorage** (local dev) or **Vercel Postgres** (production)
 - Score and answer review after each attempt
 - Category filter on the home page
 - Attempt history
-- Admin portal with login, CRUD for quizzes/questions, export/import JSON
+- Admin portal with login, CRUD for quizzes/questions, JSON bulk import for questions, export/import JSON
 
 ## Local development
 
@@ -48,6 +48,21 @@ Optional: run `scripts/schema.sql` in the Postgres SQL editor for explicit schem
 - Default password: `admin` (change via `ADMIN_PASSWORD` on Vercel)
 - **Export JSON** — download all quizzes and attempts
 - **Import JSON** — replace all data from a previous export
+- **Add questions from JSON** — paste question object(s) while editing a quiz (append or replace)
+
+### Question JSON format
+
+```json
+[
+  {
+    "text": "Which keyword declares a block-scoped variable?",
+    "options": ["var", "let", "function", "const"],
+    "correctIndex": 1
+  }
+]
+```
+
+Also accepts a single question object or `{ "questions": [...] }`. Optional `id` per question; otherwise IDs are generated automatically.
 
 ## Environment variables
 
