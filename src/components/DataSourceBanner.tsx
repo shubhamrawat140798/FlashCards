@@ -39,8 +39,8 @@ export function DataSourceBanner({
         {variant === 'full' && !isDatabase && (
           <p className="data-source-detail">
             Changes are saved only in this browser until Postgres is connected. Other
-            users and the SQL console will not see your edits. Link Postgres in Vercel
-            → Storage, set <code>POSTGRES_URL</code>, then redeploy.
+            users and the SQL console will not see your edits. Link Neon in Vercel
+            → Storage → Neon, ensure <code>DATABASE_URL</code> is set, then redeploy.
           </p>
         )}
         {variant === 'full' && isDatabase && (

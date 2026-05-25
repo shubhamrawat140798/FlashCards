@@ -29,8 +29,8 @@ export async function getHealthStatus(force = false): Promise<HealthStatus> {
       status.apiReachable = health.ok;
       if (!health.database) {
         const hint = (health as { postgresConfigured?: boolean }).postgresConfigured
-          ? 'Postgres URL is set but connection failed.'
-          : 'POSTGRES_URL is missing — link Vercel Postgres storage and redeploy.';
+          ? 'DATABASE_URL is set but connection failed — check Neon dashboard / redeploy.'
+          : 'DATABASE_URL is missing — link Neon storage on Vercel and redeploy.';
         status.error = `API is up but database is not available. ${hint}`;
       }
     } catch (e) {
@@ -57,8 +57,8 @@ export async function getHealthStatus(force = false): Promise<HealthStatus> {
   try {
     const health = await api.checkHealth();
     const hint = (health as { postgresConfigured?: boolean }).postgresConfigured
-      ? 'Postgres is configured but not reachable.'
-      : 'POSTGRES_URL not set on this deployment.';
+      ? 'DATABASE_URL is set but not reachable — check Neon / redeploy.'
+      : 'DATABASE_URL not set — connect Neon storage to this Vercel project.';
     const status: HealthStatus = {
       mode: health.database ? 'api' : 'local',
       database: health.database,

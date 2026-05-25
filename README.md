@@ -34,11 +34,13 @@ Or use `npm run dev` only — API calls fall back to localStorage when `/api/hea
 ## Deploy to Vercel
 
 1. Push the repo to GitHub and import in [Vercel](https://vercel.com)
-2. **Storage → Create Database → Postgres** (links `POSTGRES_URL` automatically)
-3. **Settings → Environment Variables** (enable for **Production**):
+2. **Storage → Connect Store → Neon** (creates integration e.g. `neon-aqua-battery`)
+3. Ensure env vars are injected into this Vercel project — Neon sets **`DATABASE_URL`** (primary), plus `DATABASE_URL_UNPOOLED`, `PGHOST`, etc.
+4. **Settings → Environment Variables** (enable for **Production**):
    - `ADMIN_PASSWORD` — admin login password (server-side)
    - `SESSION_SECRET` — random string for session cookies
-4. **Redeploy** after adding storage or env vars.
+   - `DATABASE_URL` — should appear automatically from Neon; if missing, copy from Neon → Connect → `.env.local` tab
+5. **Redeploy** after linking Neon or changing env vars.
 
 Tables are created on first API request; sample quizzes seed if empty.
 
@@ -46,7 +48,7 @@ Optional: run `scripts/schema.sql` in the Postgres SQL editor for explicit schem
 
 ### Verify production uses the database
 
-1. Open `https://YOUR-APP.vercel.app/api/health` — expect `{"ok":true,"database":true}`.
+1. Open `https://YOUR-APP.vercel.app/api/health` — expect `{"ok":true,"database":true,"connectionSource":"DATABASE_URL","provider":"neon"}`.
 2. Open **Admin Portal** — banner should say **Database (Vercel Postgres)**. If it says **Browser only (localStorage)**, Postgres is not connected; saves will not appear in SQL.
 3. After **Save quiz**, check Network tab: `PUT /api/quizzes` should return **200**.
 4. In Neon/Vercel SQL: `SELECT id, data->>'title' AS title FROM quizzes;`

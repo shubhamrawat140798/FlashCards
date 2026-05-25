@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isPostgresConfigured, pingDatabase } from './lib/postgres';
+import {
+  getConnectionSource,
+  isPostgresConfigured,
+  pingDatabase,
+} from './lib/postgres';
 import { json, serverError } from './lib/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -8,6 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const connectionSource = getConnectionSource();
     const postgresConfigured = isPostgresConfigured();
     const database = postgresConfigured ? await pingDatabase() : false;
 
@@ -15,6 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       database,
       postgresConfigured,
+      connectionSource,
+      provider: 'neon',
     });
   } catch (err) {
     return serverError(res, err);

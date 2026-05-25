@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (!isPostgresConfigured()) {
       return json(res, 503, {
-        error: 'Database not configured. Link Postgres storage on Vercel and redeploy.',
+        error: 'Database not configured. Link Neon storage on Vercel (DATABASE_URL) and redeploy.',
       });
     }
 
