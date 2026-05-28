@@ -7,6 +7,8 @@ type RawQuestion = {
   options?: string[];
   correctIndex?: number;
   correctIndexes?: number[];
+  // Common alias in imported datasets
+  correctAnswers?: number[];
 };
 
 function normalizeQuestion(raw: RawQuestion, index: number): Question {
@@ -22,10 +24,21 @@ function normalizeQuestion(raw: RawQuestion, index: number): Question {
 
   const max = options.length - 1;
   let correctIndexes: number[] = [];
-  if (Array.isArray(raw.correctIndexes)) {
-    correctIndexes = raw.correctIndexes
+  const rawList =
+    Array.isArray(raw.correctIndexes)
+      ? raw.correctIndexes
+      : Array.isArray(raw.correctAnswers)
+        ? raw.correctAnswers
+        : null;
+
+  if (rawList) {
+    // Accept either 0-based or 1-based lists. Heuristic:
+    // - if any index equals options.length, it's definitely 1-based.
+    // - else keep as-is (0-based).
+    const looksOneBased = rawList.some((n) => typeof n === 'number' && Math.trunc(n) === options.length);
+    correctIndexes = rawList
       .filter((n) => typeof n === 'number' && Number.isFinite(n))
-      .map((n) => Math.trunc(n))
+      .map((n) => (looksOneBased ? Math.trunc(n) - 1 : Math.trunc(n)))
       .filter((n) => n >= 0 && n <= max);
   } else if (typeof raw.correctIndex === 'number') {
     const n = Math.trunc(raw.correctIndex);
@@ -36,7 +49,7 @@ function normalizeQuestion(raw: RawQuestion, index: number): Question {
 
   if (correctIndexes.length === 0) {
     throw new Error(
-      `Question ${index + 1}: provide "correctIndex" (number) or "correctIndexes" (number[]).`
+      `Question ${index + 1}: provide "correctIndex" (number) or "correctIndexes"/"correctAnswers" (number[]).`
     );
   }
 

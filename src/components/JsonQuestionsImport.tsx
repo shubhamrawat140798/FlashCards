@@ -79,6 +79,7 @@ export function JsonQuestionsImport({
             <code>text</code>, <code>options</code> (min 2), and{' '}
             <code>correctIndexes</code> (array of 0-based indexes).{' '}
             <code>correctIndex</code> is still accepted for older JSON.{' '}
+            <code>correctAnswers</code> is also accepted (0-based or 1-based).{' '}
             <code>id</code> is optional.
           </p>
 
