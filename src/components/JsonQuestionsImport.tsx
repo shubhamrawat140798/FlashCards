@@ -77,7 +77,9 @@ export function JsonQuestionsImport({
             Paste a single question, an array of questions, or{' '}
             <code>{'{ "questions": [...] }'}</code>. Each question needs{' '}
             <code>text</code>, <code>options</code> (min 2), and{' '}
-            <code>correctIndex</code> (0-based). <code>id</code> is optional.
+            <code>correctIndexes</code> (array of 0-based indexes).{' '}
+            <code>correctIndex</code> is still accepted for older JSON.{' '}
+            <code>id</code> is optional.
           </p>
 
           <textarea

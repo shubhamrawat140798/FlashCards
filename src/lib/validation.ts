@@ -24,10 +24,15 @@ export function validateQuestion(q: Question): string[] {
   const filled = q.options.filter((o) => o.trim());
   if (filled.length < 2) errors.push('At least 2 options are required.');
 
-  if (q.correctIndex < 0 || q.correctIndex >= q.options.length) {
-    errors.push('Select a valid correct answer.');
-  } else if (!q.options[q.correctIndex]?.trim()) {
-    errors.push('Correct option cannot be empty.');
+  const correct = Array.isArray(q.correctIndexes) ? q.correctIndexes : [];
+  if (correct.length === 0) {
+    errors.push('Select at least one correct answer.');
+  } else {
+    const max = q.options.length - 1;
+    const invalid = correct.some((idx) => idx < 0 || idx > max);
+    if (invalid) errors.push('Select valid correct answer(s).');
+    const emptyCorrect = correct.some((idx) => !q.options[idx]?.trim());
+    if (emptyCorrect) errors.push('Correct option cannot be empty.');
   }
 
   return errors;

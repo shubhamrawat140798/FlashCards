@@ -18,7 +18,7 @@ function emptyQuestion(): Question {
     id: crypto.randomUUID(),
     text: '',
     options: ['', '', '', ''],
-    correctIndex: 0,
+    correctIndexes: [0],
   };
 }
 

@@ -17,7 +17,7 @@ export function QuizPage() {
   const quiz: Quiz | undefined = quizzes.find((q) => q.id === quizId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answers, setAnswers] = useState<Record<string, number[]>>({});
   const [submitting, setSubmitting] = useState(false);
   const startedAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
@@ -87,11 +87,17 @@ export function QuizPage() {
   }
 
   const question = quiz.questions[currentIndex];
-  const allAnswered = quiz.questions.every((q) => answers[q.id] !== undefined);
+  const allAnswered = quiz.questions.every((q) => (answers[q.id]?.length ?? 0) > 0);
   const isLast = currentIndex === quiz.questions.length - 1;
 
-  const handleSelect = (index: number) => {
-    setAnswers((prev) => ({ ...prev, [question.id]: index }));
+  const handleToggle = (index: number) => {
+    setAnswers((prev) => {
+      const existing = prev[question.id] ?? [];
+      const set = new Set(existing);
+      if (set.has(index)) set.delete(index);
+      else set.add(index);
+      return { ...prev, [question.id]: Array.from(set).sort((a, b) => a - b) };
+    });
   };
 
   return (
@@ -112,8 +118,8 @@ export function QuizPage() {
 
       <QuestionBlock
         question={question}
-        selectedIndex={answers[question.id]}
-        onSelect={handleSelect}
+        selectedIndexes={answers[question.id]}
+        onToggle={handleToggle}
       />
 
       <div className="quiz-nav">
@@ -131,7 +137,7 @@ export function QuizPage() {
             <button
               type="button"
               className="btn-primary"
-              disabled={answers[question.id] === undefined || submitting}
+              disabled={(answers[question.id]?.length ?? 0) === 0 || submitting}
               onClick={() => setCurrentIndex((i) => i + 1)}
             >
               Next

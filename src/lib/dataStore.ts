@@ -2,6 +2,7 @@ import type { ExportPayload } from '../types/export';
 import type { Quiz, QuizAttempt } from '../types/quiz';
 import * as api from './apiClient';
 import { getDataMode, requireDatabase, useDatabaseOnly } from './dataMode';
+import { normalizeAttempt, normalizeQuiz } from './normalize';
 import * as local from './storage';
 
 async function ensureApiReady(): Promise<void> {
@@ -20,11 +21,15 @@ async function ensureApiReady(): Promise<void> {
 export async function loadQuizzes(): Promise<Quiz[]> {
   if (useDatabaseOnly()) {
     await requireDatabase();
-    return api.fetchQuizzes();
+    const quizzes = await api.fetchQuizzes();
+    return quizzes.map(normalizeQuiz);
   }
   const mode = await getDataMode();
-  if (mode === 'api') return api.fetchQuizzes();
-  return local.getQuizzes();
+  if (mode === 'api') {
+    const quizzes = await api.fetchQuizzes();
+    return quizzes.map(normalizeQuiz);
+  }
+  return local.getQuizzes().map(normalizeQuiz);
 }
 
 export async function loadQuizById(id: string): Promise<Quiz | undefined> {
@@ -45,11 +50,15 @@ export async function removeQuiz(id: string): Promise<void> {
 export async function loadAttempts(): Promise<QuizAttempt[]> {
   if (useDatabaseOnly()) {
     await requireDatabase();
-    return api.fetchAttempts();
+    const attempts = await api.fetchAttempts();
+    return attempts.map(normalizeAttempt);
   }
   const mode = await getDataMode();
-  if (mode === 'api') return api.fetchAttempts();
-  return local.getAttempts();
+  if (mode === 'api') {
+    const attempts = await api.fetchAttempts();
+    return attempts.map(normalizeAttempt);
+  }
+  return local.getAttempts().map(normalizeAttempt);
 }
 
 export async function persistAttempt(attempt: QuizAttempt): Promise<void> {

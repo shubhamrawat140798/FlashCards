@@ -6,6 +6,7 @@ type RawQuestion = {
   text?: string;
   options?: string[];
   correctIndex?: number;
+  correctIndexes?: number[];
 };
 
 function normalizeQuestion(raw: RawQuestion, index: number): Question {
@@ -19,12 +20,23 @@ function normalizeQuestion(raw: RawQuestion, index: number): Question {
     );
   }
 
-  let correctIndex =
-    typeof raw.correctIndex === 'number' ? raw.correctIndex : 0;
+  const max = options.length - 1;
+  let correctIndexes: number[] = [];
+  if (Array.isArray(raw.correctIndexes)) {
+    correctIndexes = raw.correctIndexes
+      .filter((n) => typeof n === 'number' && Number.isFinite(n))
+      .map((n) => Math.trunc(n))
+      .filter((n) => n >= 0 && n <= max);
+  } else if (typeof raw.correctIndex === 'number') {
+    const n = Math.trunc(raw.correctIndex);
+    if (n >= 0 && n <= max) correctIndexes = [n];
+  }
 
-  if (correctIndex < 0 || correctIndex >= options.length) {
+  correctIndexes = Array.from(new Set(correctIndexes)).sort((a, b) => a - b);
+
+  if (correctIndexes.length === 0) {
     throw new Error(
-      `Question ${index + 1}: "correctIndex" must be between 0 and ${options.length - 1}.`
+      `Question ${index + 1}: provide "correctIndex" (number) or "correctIndexes" (number[]).`
     );
   }
 
@@ -37,7 +49,7 @@ function normalizeQuestion(raw: RawQuestion, index: number): Question {
     id: typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : crypto.randomUUID(),
     text,
     options,
-    correctIndex,
+    correctIndexes,
   };
 
   const validationErrors = validateQuestion(question);
@@ -93,11 +105,11 @@ export const QUESTION_JSON_EXAMPLE = `[
   {
     "text": "Which keyword declares a block-scoped variable?",
     "options": ["var", "let", "function", "const"],
-    "correctIndex": 1
+    "correctIndexes": [1]
   },
   {
     "text": "What is 2 + 2?",
     "options": ["3", "4", "5"],
-    "correctIndex": 1
+    "correctIndexes": [1]
   }
 ]`;

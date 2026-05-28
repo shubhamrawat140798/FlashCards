@@ -4,6 +4,14 @@ type ReviewListProps = {
   items: ReviewItem[];
 };
 
+function formatOptionList(options: string[], indexes: number[] | undefined): string {
+  if (!indexes || indexes.length === 0) return 'Not answered';
+  return indexes
+    .map((i) => options[i])
+    .filter((v) => typeof v === 'string' && v.trim().length > 0)
+    .join(', ');
+}
+
 export function ReviewList({ items }: ReviewListProps) {
   return (
     <div className="review-list">
@@ -17,14 +25,12 @@ export function ReviewList({ items }: ReviewListProps) {
           </p>
           <p className="review-answer">
             <span>Your answer: </span>
-            {item.selected !== undefined
-              ? item.question.options[item.selected]
-              : 'Not answered'}
+            {formatOptionList(item.question.options, item.selected)}
           </p>
           {!item.correct && (
             <p className="review-answer">
               <span>Correct answer: </span>
-              {item.question.options[item.question.correctIndex]}
+              {formatOptionList(item.question.options, item.question.correctIndexes)}
             </p>
           )}
           <span className={`review-badge ${item.correct ? 'correct' : 'incorrect'}`}>

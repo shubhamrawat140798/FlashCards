@@ -2,15 +2,17 @@ import type { Question } from '../types/quiz';
 
 type QuestionBlockProps = {
   question: Question;
-  selectedIndex: number | undefined;
-  onSelect: (index: number) => void;
+  selectedIndexes: number[] | undefined;
+  onToggle: (index: number) => void;
 };
 
 export function QuestionBlock({
   question,
-  selectedIndex,
-  onSelect,
+  selectedIndexes,
+  onToggle,
 }: QuestionBlockProps) {
+  const selectedSet = new Set(selectedIndexes ?? []);
+
   return (
     <div className="question-block">
       <p className="question-text">{question.text}</p>
@@ -18,13 +20,13 @@ export function QuestionBlock({
         {question.options.map((option, index) => (
           <li key={index}>
             <label
-              className={`option-item ${selectedIndex === index ? 'selected' : ''}`}
+              className={`option-item ${selectedSet.has(index) ? 'selected' : ''}`}
             >
               <input
-                type="radio"
+                type="checkbox"
                 name={`question-${question.id}`}
-                checked={selectedIndex === index}
-                onChange={() => onSelect(index)}
+                checked={selectedSet.has(index)}
+                onChange={() => onToggle(index)}
               />
               <span>{option}</span>
             </label>

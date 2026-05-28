@@ -1,13 +1,27 @@
 import type { GradeResult, Quiz } from '../types/quiz';
 
+function normalizeIndexes(indexes: number[] | undefined): number[] {
+  if (!indexes) return [];
+  return Array.from(new Set(indexes)).sort((a, b) => a - b);
+}
+
+function setsEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 export function gradeQuiz(
   quiz: Quiz,
-  answers: Record<string, number>
+  answers: Record<string, number[]>
 ): GradeResult {
   let score = 0;
   const review = quiz.questions.map((q) => {
-    const selected = answers[q.id];
-    const correct = selected === q.correctIndex;
+    const selected = normalizeIndexes(answers[q.id]);
+    const correctAnswers = normalizeIndexes(q.correctIndexes);
+    const correct = setsEqual(selected, correctAnswers);
     if (correct) score++;
     return { question: q, selected, correct };
   });

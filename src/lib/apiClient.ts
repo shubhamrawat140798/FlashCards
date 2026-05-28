@@ -1,13 +1,39 @@
 import type { ExportPayload } from '../types/export';
 import type { Quiz, QuizAttempt } from '../types/quiz';
 
-const base = import.meta.env.VITE_API_URL ?? '';
+const baseRaw = (import.meta.env.VITE_API_URL ?? '').trim();
+
+function resolveBaseUrl(): URL {
+  const origin = window.location.origin;
+  if (!baseRaw) return new URL(origin);
+
+  // Allow relative base like "/".
+  if (baseRaw.startsWith('/')) return new URL(baseRaw, origin);
+
+  try {
+    return new URL(baseRaw);
+  } catch {
+    // Common local misconfig: "localhost:3000" (missing scheme) -> Safari throws
+    // "The string did not match the expected pattern."
+    if (!baseRaw.includes('://')) {
+      return new URL(`http://${baseRaw}`);
+    }
+    // Fall back to same-origin to avoid hard crashes.
+    return new URL(origin);
+  }
+}
+
+const baseUrl = resolveBaseUrl();
+
+function resolveRequestUrl(path: string): string {
+  return new URL(path, baseUrl).toString();
+}
 
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${base}${path}`, {
+  const res = await fetch(resolveRequestUrl(path), {
     ...options,
     credentials: 'include',
     headers: {
@@ -91,7 +117,7 @@ export async function checkSessionApi(): Promise<boolean> {
 }
 
 export async function downloadExport(): Promise<void> {
-  const res = await fetch(`${base}/api/export`, { credentials: 'include' });
+  const res = await fetch(resolveRequestUrl('/api/export'), { credentials: 'include' });
   if (!res.ok) throw new Error('Export failed');
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);

@@ -27,7 +27,7 @@ Open `http://localhost:5173`. Without a database, the app uses **localStorage** 
 2. Link the project: `vercel link`
 3. Add Vercel Postgres in the dashboard, then pull env: `vercel env pull .env.local`
 4. Set `ADMIN_PASSWORD` in `.env.local`
-5. Run: `npm run dev:full` (proxies `/api` to Vercel dev server)
+5. Run: `npm run dev:full` (runs Vercel API at `http://localhost:3000` and Vite at `http://localhost:5173`, with `/api` proxied to the API)
 
 Or use `npm run dev` only — API calls fall back to localStorage when `/api/health` reports no database.
 

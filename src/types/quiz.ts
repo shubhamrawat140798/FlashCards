@@ -2,7 +2,12 @@ export type Question = {
   id: string;
   text: string;
   options: string[];
-  correctIndex: number;
+  /**
+   * Multi-answer support. `correctIndex` remains optional only so older saved
+   * quizzes can still be loaded and normalized.
+   */
+  correctIndexes: number[];
+  correctIndex?: number;
 };
 
 export type Quiz = {
@@ -17,7 +22,7 @@ export type Quiz = {
 export type QuizAttempt = {
   id: string;
   quizId: string;
-  answers: Record<string, number>;
+  answers: Record<string, number[]>;
   score: number;
   total: number;
   startedAt: string;
@@ -27,7 +32,7 @@ export type QuizAttempt = {
 
 export type ReviewItem = {
   question: Question;
-  selected: number | undefined;
+  selected: number[] | undefined;
   correct: boolean;
 };
 

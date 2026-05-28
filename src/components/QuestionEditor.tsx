@@ -15,6 +15,8 @@ export function QuestionEditor({
   onChange,
   onRemove,
 }: QuestionEditorProps) {
+  const correctSet = new Set(question.correctIndexes ?? []);
+
   const setOption = (oIndex: number, value: string) => {
     const options = [...question.options];
     options[oIndex] = value;
@@ -29,13 +31,23 @@ export function QuestionEditor({
   const removeOption = (oIndex: number) => {
     if (question.options.length <= 2) return;
     const options = question.options.filter((_, i) => i !== oIndex);
-    let correctIndex = question.correctIndex;
-    if (oIndex === correctIndex) {
-      correctIndex = 0;
-    } else if (oIndex < correctIndex) {
-      correctIndex -= 1;
-    }
-    onChange({ options, correctIndex });
+    const nextCorrect = (question.correctIndexes ?? [])
+      .filter((idx) => idx !== oIndex)
+      .map((idx) => (idx > oIndex ? idx - 1 : idx))
+      .filter((idx) => idx >= 0 && idx < options.length);
+
+    onChange({
+      options,
+      correctIndexes: nextCorrect.length > 0 ? Array.from(new Set(nextCorrect)).sort((a, b) => a - b) : [0],
+    });
+  };
+
+  const toggleCorrect = (oIndex: number) => {
+    const next = new Set(question.correctIndexes ?? []);
+    if (next.has(oIndex)) next.delete(oIndex);
+    else next.add(oIndex);
+    const arr = Array.from(next).sort((a, b) => a - b);
+    onChange({ correctIndexes: arr.length > 0 ? arr : [oIndex] });
   };
 
   return (
@@ -64,15 +76,14 @@ export function QuestionEditor({
       </div>
 
       <fieldset className="answers-fieldset">
-        <legend>Answers — select the correct one</legend>
+        <legend>Answers — select all correct options</legend>
         {question.options.map((opt, oIndex) => (
           <div key={oIndex} className="answer-row">
             <label className="answer-correct-label" title="Mark as correct answer">
               <input
-                type="radio"
-                name={`correct-${question.id}`}
-                checked={question.correctIndex === oIndex}
-                onChange={() => onChange({ correctIndex: oIndex })}
+                type="checkbox"
+                checked={correctSet.has(oIndex)}
+                onChange={() => toggleCorrect(oIndex)}
               />
               <span className="answer-correct-text">Correct</span>
             </label>
